@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless Signed URL File Gateway (API Gateway + Lambda + S3 + IAM)
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 256
+    Architectures: [x86_64]
+
+Resources:
+  LabBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub redirect-${AWS::AccountId}-${AWS::Region}
+      PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          IgnorePublicAcls: true
+          BlockPublicPolicy: true
+          RestrictPublicBuckets: true
+      BucketEncryption:
+          ServerSideEncryptionConfiguration:
+            - ServerSideEncryptionByDefault:
+                SSEAlgorithm: AES256
+  
+  FileGatewayLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub file-gateway-lambda-role-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: FileGatewayLeastPrivilege
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: S3ObjectAccess
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource: !Sub "${LabBucket.Arn}/*"
+              - Sid: S3ListBucketOptional
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt LabBucket.Arn
+              - Sid: LambdaLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+
+  PrepareS3UploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: PrepareS3UploadFunction
+      Handler: app.create_upload_url_handler
+      CodeUri: src/
+      Role: !GetAtt FileGatewayLambdaRole.Arn
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref LabBucket
+          UPLOAD_URL_EXPIRES_SECONDS: "300" # 5 minutes, the least possible time for higher security
+      Events:
+        Create:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /files
+            Method: POST
+  
+  DownloadRedirectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: DownloadRedirectFunction
+      Handler: app.download_redirect_handler
+      CodeUri: src/
+      Role: !GetAtt FileGatewayLambdaRole.Arn
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref LabBucket
+          DOWNLOAD_URL_EXPIRES_SECONDS: "3600"  # 1 hour
+          REDIRECT_STATUS_CODE: "302"           # or "307" if you choose
+      Events:
+        Resolve:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /files/{objectKey}
+            Method: GET
+
+Outputs:
+  ApiBaseUrl:
+    Description: Base URL for the API stage
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  FilesPostEndpoint:
+    Description: POST endpoint to request an upload URL
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod/files"
+  FilesGetEndpointTemplate:
+    Description: GET endpoint template (replace {objectKey})
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod/files/{objectKey}"
+  BucketName:
+    Description: S3 bucket used for file storage
+    Value: !Ref LabBucket
