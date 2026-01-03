@@ -94,7 +94,7 @@ Resources:
         Variables:
           BUCKET_NAME: !Ref LabBucket
           DOWNLOAD_URL_EXPIRES_SECONDS: "3600"  # 1 hour
-          REDIRECT_STATUS_CODE: "302"           # or "307" if you choose
+          REDIRECT_STATUS_CODE: "302"           # proper for GET redirects using only the object key for getting the download URL
       Events:
         Resolve:
           Type: Api
