@@ -11,16 +11,6 @@ DOWNLOAD_EXPIRES = int(os.environ.get("DOWNLOAD_URL_EXPIRES_SECONDS", "3600"))
 REDIRECT_STATUS = int(os.environ.get("REDIRECT_STATUS_CODE", "302"))
 
 
-def _response(status_code: int, body: dict | None = None, headers: dict | None = None):
-    return {
-        "statusCode": status_code,
-        "headers": {
-            "Content-Type": "application/json",
-            **(headers or {}),
-        },
-        "body": "" if body is None else json.dumps(body),
-    }
-
 def create_upload_url_handler(event, context):
     """
     POST /files
@@ -29,6 +19,7 @@ def create_upload_url_handler(event, context):
     Response:
       {"uploadURL": "...", "objectKey": "..."}
     """
+    
     if "body" not in event or event["body"] is None:
         return _resp(400, {"error": "Missing request body"})
 
@@ -56,7 +47,16 @@ def create_upload_url_handler(event, context):
         ExpiresIn=UPLOAD_EXPIRES,
     )
 
-    return _response(201, {"uploadURL": upload_url, "objectKey": object_key})
+    body = {"uploadURL": upload_url, "objectKey": object_key}
+
+    return{
+        "statusCode": 201,
+        "headers": {
+            "Content-Type": "application/json",
+            **(headers or {}),
+        },
+        "body": json.dumps(body)
+    }
 
 def download_redirect_handler(event, context):
     """
