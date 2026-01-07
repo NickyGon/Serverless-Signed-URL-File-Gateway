@@ -35,7 +35,7 @@ def create_upload_url_handler(event, context):
     if "." in file_name:
         ext = "." + file_name.split(".")[-1].strip().lower()
 
-    object_key = f"uploads/{uuid.uuid4().hex}{ext}"
+    object_key = f"{uuid.uuid4().hex}{ext}"
 
     upload_url = s3.generate_presigned_url(
         ClientMethod="put_object",
