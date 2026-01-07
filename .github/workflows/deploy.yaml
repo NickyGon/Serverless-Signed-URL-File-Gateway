@@ -1,7 +1,7 @@
 name: Deploy Serverless Signed URL File Gateway
 on:
   push:
-    branches: [ "main2" ]
+    branches: [ "main" ]
 jobs:
   deploy:
     runs-on: ubuntu-latest
