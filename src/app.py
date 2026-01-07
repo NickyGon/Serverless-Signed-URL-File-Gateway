@@ -52,8 +52,7 @@ def create_upload_url_handler(event, context):
     return{
         "statusCode": 201,
         "headers": {
-            "Content-Type": "application/json",
-            **(headers or {}),
+            "Content-Type": "application/json"
         },
         "body": json.dumps(body)
     }
