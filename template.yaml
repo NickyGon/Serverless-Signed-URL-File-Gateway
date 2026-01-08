@@ -14,15 +14,6 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub redirect-${AWS::AccountId}-${AWS::Region}
-      PublicAccessBlockConfiguration:
-          BlockPublicAcls: true
-          IgnorePublicAcls: true
-          BlockPublicPolicy: true
-          RestrictPublicBuckets: true
-      BucketEncryption:
-          ServerSideEncryptionConfiguration:
-            - ServerSideEncryptionByDefault:
-                SSEAlgorithm: AES256
   
   FileGatewayLambdaRole:
     Type: AWS::IAM::Role
@@ -46,11 +37,6 @@ Resources:
                   - s3:PutObject
                   - s3:GetObject
                 Resource: !Sub "${LabBucket.Arn}/*"
-              - Sid: S3ListBucketOptional
-                Effect: Allow
-                Action:
-                  - s3:ListBucket
-                Resource: !GetAtt LabBucket.Arn
               - Sid: LambdaLogs
                 Effect: Allow
                 Action:
@@ -110,8 +96,8 @@ Outputs:
   FilesPostEndpoint:
     Description: POST endpoint to request an upload URL
     Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod/files"
-  FilesGetEndpointTemplate:
-    Description: GET endpoint template (replace {objectKey})
+  FilesGetEndpoint:
+    Description: GET endpoint to request a download URL via the file's {objectKey}
     Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod/files/{objectKey}"
   BucketName:
     Description: S3 bucket used for file storage
