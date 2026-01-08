@@ -23,12 +23,20 @@ def create_upload_url_handler(event, context):
     # Parsing the body for obtaining the filename and the file type
     # Should be a valid JSON structure
     if "body" not in event or event["body"] is None:
-        return _resp(400, {"error": "Missing request body"})
+        return {
+            "statusCode": 400,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"error": "Missing request body"})
+        }
 
     try:
         body = json.loads(event["body"])
     except json.JSONDecodeError:
-        return _resp(400, {"error": "Body must be valid JSON"})
+        return {
+            "statusCode": 400,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"error": "Body must be valid JSON"})
+        }
 
     file_name = body.get("fileName", "file")
     content_type = body.get("contentType", "application/octet-stream")
