@@ -45,7 +45,7 @@ def create_upload_url_handler(event, context):
     )
 
     # Returning the upload URL and the object key in the response body
-    body = {"uploadURL": upload_url, "objectKey": object_key}
+    body = {"uploadURL": upload_url, "objectKey": file_name}
 
     return{
         "statusCode": 201,
