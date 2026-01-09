@@ -207,6 +207,97 @@ git commit -m "Update expiration times"
 git push origin main
 ```
 
+## TEST INSTRUCTIONS
+
+## Testing with Postman
+
+### 1. POST /files
+#### A. Request a pre-signed URL with the desired file name and file type
+
+1. Create a new Postman request
+2. Set the REST method to **POST**
+3. Place the Base API URL + "/files"
+
+![POST request](https://drive.google.com/uc?export=view&id=1V9jI7KoukypJg8Lv82GsqsYSa9PEk_MJ)
+
+4. Select the Body tab
+5. Select the **Raw** option, and set the format dropdown to **JSON**
+6. Write a JSON body with the file's name and file MIME type (according to the file you want to upload):
+
+```json
+{
+    "fileName":"testVideo.mp4",
+    "contentType":"video/mp4"
+}
+```
+
+![POST Body creation](https://drive.google.com/uc?export=view&id=1AbcvhEE-mHWu6X2ibd7iAYynT_0iy-2K)
+
+7. Click "Send", and wait for the response
+
+**Expected Response:**
+
+![POST request response](https://drive.google.com/uc?export=view&id=11JyL4YcPq41R56vfYLCxCO3-scoRydQ3)
+
+Save the `objectKey` for later (the GET method)
+
+#### B. Upload a File with the pre-signed URL
+
+1. Create a new Postman request
+2. Set the REST method to **PUT**
+3. Place the `uploadURL` from the previous response as the API URL
+
+![PUT request](https://drive.google.com/uc?export=view&id=1rP6Xr1r1h3yS3J5UIF-Cp7wcyXmBHpcq)
+
+4. Select the Headers tab
+5. Create a new header by clicking the last row (the one with the "Key" and "Value" placeholders):
+        - Key: "Content-Type"
+        - Value: The MIME type (ex. "video/mp4"). Should natch what you put in the POST body
+
+![PUT request Headers](https://drive.google.com/uc?export=view&id=1J_x0CCvtY9vUS2StRYqwvsILBNwG0TWe)
+
+6. Select the Body tab
+7. Select the **Binary** option, and press the "Select File" button
+8. Choose the file you want to upload (make sure you placed the right format)
+
+![PUT Body creation](https://drive.google.com/uc?export=view&id=1pbCarcCVTZP3pngalhDW3nY-aAUnzc0T)
+
+9. Click "Send", and wait for the response (should be a 200 response without body if it's valid)
+
+**Expected Response:**
+
+![PUT request response](https://drive.google.com/uc?export=view&id=18Ms14mnIh5MY3cBMGiadqRpo7qB2nWCu)
+
+**Expired URL Expected Response:**
+
+![PUT request response](https://drive.google.com/uc?export=view&id=1IafciEs7G7On6ney31tKsA1iU2q8BQBK)
+
+### 2. GET /files/{objectKey}
+#### A. Request a pre-signed download URL with the object key
+
+1. Create a new Postman request
+2. Set the REST method to **GET**
+3. Place the Base API URL + "/files" + the `objectKey` from the POST answer
+
+![GET request](https://drive.google.com/uc?export=view&id=1C-ZyEBojVlpz1J0CqQzUcxjnQ98oAHzB)
+
+4. Click "Send", and wait for the response
+- With "Automatically follow redirects" enabled (if the file is big, it will deliver an error in Postman):
+
+![GET redirect large file request response](https://drive.google.com/uc?export=view&id=14Z9vY1c1NAimFZAaCXIO4mpH2uJiDvMu)
+
+![GET redirect request response](https://drive.google.com/uc?export=view&id=1M9wGUDV8Lh3_cHOK2xUhuZV9sLzHU_3D)
+
+(Use "Save Response" at the right top of the Response section to save the redirect's file)
+
+- With "Automatically follow redirects" disabled:
+
+![GET standard request response](https://drive.google.com/uc?export=view&id=1q046snSZU9r7-us8d8cjpb3gD7cYwrPW)
+
+**Checking the redirect URL in a browser:**
+
+![Redirect Link in browser](https://drive.google.com/uc?export=view&id=1l3Sl2FFannL2CsP_GUKauJIwmCvNnOvD)
+
 ## Testing with cURL (in CMS)
 
 ### 1. POST /files
@@ -238,7 +329,6 @@ curl -X PUT "UPLOAD_URL_FROM_STEP_1" \
 ```
 
 (for CMS, the data binary option requires to be written like this **--data-binary @"C:\path\to\your\test-image.png"** )
-
 
 ### 2. GET /files/{objectKey}
 #### A. Request a pre-signed download URL with the object key
